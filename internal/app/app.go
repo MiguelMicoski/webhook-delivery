@@ -33,7 +33,13 @@ func (a *App) Run() error {
 	}
 
 	defer func() {
-		if err := db.Close(); err != nil {
+		sqlDB, err := db.DB()
+		if err != nil {
+			log.Println("get underlying db err:", err)
+			return
+		}
+
+		if err := sqlDB.Close(); err != nil {
 			log.Println("close db err:", err)
 		}
 	}()
