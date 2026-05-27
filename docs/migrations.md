@@ -61,6 +61,6 @@ migrate -path migrations -database "$DATABASE_URL" down 1
 
 ## Producao
 
-Em producao, prefira rodar migrations como etapa separada do deploy, antes de subir a nova versao da API.
+Em producao, opte rodar migrations como etapa separada do deploy, antes de subir a nova versao da API.
 
 Esse fluxo evita que multiplas instancias da aplicacao tentem alterar o schema ao mesmo tempo e deixa mais claro quando uma mudanca de banco falha.
