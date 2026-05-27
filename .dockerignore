@@ -1,0 +1,5 @@
+.git
+.idea
+.env
+server.*.log
+postgres_data
