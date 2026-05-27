@@ -1,7 +1,13 @@
 package app
 
 import (
+	"context"
+	"fmt"
+	"log"
+	"log/slog"
+
 	"awesomeProject/internal/config"
+	"awesomeProject/internal/database"
 	"awesomeProject/internal/handler"
 	httpserver "awesomeProject/internal/http"
 	"awesomeProject/internal/repository"
@@ -19,7 +25,22 @@ func New(config config.Config) *App {
 }
 
 func (a *App) Run() error {
-	webhookEventRepository := repository.NewMemoryWebhookEventRepository()
+	ctx := context.Background()
+
+	db, err := database.Connect(ctx, a.config.DatabaseURL)
+	if err != nil {
+		return fmt.Errorf("connect database: %w", err)
+	}
+
+	defer func() {
+		if err := db.Close(); err != nil {
+			log.Println("close db err:", err)
+		}
+	}()
+
+	slog.Info("connect to database")
+
+	webhookEventRepository := repository.NewPostgresWebhookEventRepository(db)
 	webhookEventService := service.NewWebhookEventService(webhookEventRepository)
 	webhookEventHandler := handler.NewWebhookEventHandler(webhookEventService)
 
