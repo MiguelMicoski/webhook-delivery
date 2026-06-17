@@ -27,11 +27,17 @@ type CreateWebhookEventInput struct {
 
 type WebhookEventService struct {
 	repository repository.WebhookEventRepository
+	publisher  WebhookEventPublisher
 }
 
-func NewWebhookEventService(repository repository.WebhookEventRepository) *WebhookEventService {
+type WebhookEventPublisher interface {
+	PublishWebhookEventCreated(ctx context.Context, eventID string) error
+}
+
+func NewWebhookEventService(repository repository.WebhookEventRepository, publisher WebhookEventPublisher) *WebhookEventService {
 	return &WebhookEventService{
 		repository: repository,
+		publisher:  publisher,
 	}
 }
 
@@ -59,6 +65,12 @@ func (s *WebhookEventService) Create(ctx context.Context, input CreateWebhookEve
 	createdEvent, err := s.repository.Create(ctx, event)
 	if err != nil {
 		return model.WebhookEvent{}, fmt.Errorf("create webhook event: %w", err)
+	}
+
+	if s.publisher != nil {
+		if err := s.publisher.PublishWebhookEventCreated(ctx, createdEvent.ID); err != nil {
+			return model.WebhookEvent{}, fmt.Errorf("publish webhook event created: %w", err)
+		}
 	}
 
 	return createdEvent, nil

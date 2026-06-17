@@ -10,6 +10,7 @@ import (
 	"awesomeProject/internal/database"
 	"awesomeProject/internal/handler"
 	httpserver "awesomeProject/internal/http"
+	"awesomeProject/internal/messaging"
 	"awesomeProject/internal/repository"
 	"awesomeProject/internal/service"
 )
@@ -46,8 +47,28 @@ func (a *App) Run() error {
 
 	slog.Info("connect to database")
 
+	rabbitmq, err := messaging.ConnectRabbitMQ(ctx, messaging.RabbitMQConfig{
+		URL:                a.config.RabbitMQURL,
+		Exchange:           a.config.RabbitMQExchange,
+		Queue:              a.config.RabbitMQQueue,
+		RoutingKey:         a.config.RabbitMQRoutingKey,
+		DeadLetterExchange: a.config.RabbitMQDeadLetterExchange,
+		DeadLetterQueue:    a.config.RabbitMQDeadLetterQueue,
+	})
+	if err != nil {
+		return fmt.Errorf("connect rabbitmq: %w", err)
+	}
+	defer func() {
+		if err := rabbitmq.Close(); err != nil {
+			log.Println("close rabbitmq err:", err)
+		}
+	}()
+
+	slog.Info("connect to rabbitmq")
+
 	webhookEventRepository := repository.NewPostgresWebhookEventRepository(db)
-	webhookEventService := service.NewWebhookEventService(webhookEventRepository)
+	webhookEventPublisher := messaging.NewWebhookEventPublisher(rabbitmq)
+	webhookEventService := service.NewWebhookEventService(webhookEventRepository, webhookEventPublisher)
 	webhookEventHandler := handler.NewWebhookEventHandler(webhookEventService)
 
 	router := httpserver.NewRouter(httpserver.RouterDependencies{

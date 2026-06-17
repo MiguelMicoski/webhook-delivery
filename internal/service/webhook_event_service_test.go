@@ -36,9 +36,25 @@ func (r *fakeWebhookEventRepository) FindByID(ctx context.Context, id string) (m
 	return r.event, nil
 }
 
+type fakeWebhookEventPublisher struct {
+	eventID string
+	err     error
+}
+
+func (p *fakeWebhookEventPublisher) PublishWebhookEventCreated(ctx context.Context, eventID string) error {
+	if p.err != nil {
+		return p.err
+	}
+
+	p.eventID = eventID
+
+	return nil
+}
+
 func TestWebhookEventServiceCreate(t *testing.T) {
 	repository := &fakeWebhookEventRepository{}
-	service := NewWebhookEventService(repository)
+	publisher := &fakeWebhookEventPublisher{}
+	service := NewWebhookEventService(repository, publisher)
 
 	event, err := service.Create(context.Background(), CreateWebhookEventInput{
 		TargetURL: "https://example.com/webhook",
@@ -61,10 +77,14 @@ func TestWebhookEventServiceCreate(t *testing.T) {
 	if repository.event.ID != event.ID {
 		t.Fatal("expected repository to receive created event")
 	}
+
+	if publisher.eventID != event.ID {
+		t.Fatal("expected publisher to receive created event ID")
+	}
 }
 
 func TestWebhookEventServiceCreateValidatesTargetURL(t *testing.T) {
-	service := NewWebhookEventService(&fakeWebhookEventRepository{})
+	service := NewWebhookEventService(&fakeWebhookEventRepository{}, nil)
 
 	_, err := service.Create(context.Background(), CreateWebhookEventInput{
 		TargetURL: "not-a-url",
@@ -88,7 +108,7 @@ func TestWebhookEventServiceFindByID(t *testing.T) {
 			Status: model.WebhookEventStatusPending,
 		},
 	}
-	service := NewWebhookEventService(repository)
+	service := NewWebhookEventService(repository, nil)
 
 	event, err := service.FindByID(context.Background(), "evt_123")
 	if err != nil {
@@ -101,7 +121,7 @@ func TestWebhookEventServiceFindByID(t *testing.T) {
 }
 
 func TestWebhookEventServiceFindByIDReturnsNotFound(t *testing.T) {
-	service := NewWebhookEventService(&fakeWebhookEventRepository{})
+	service := NewWebhookEventService(&fakeWebhookEventRepository{}, nil)
 
 	_, err := service.FindByID(context.Background(), "evt_missing")
 	if !errors.Is(err, ErrWebhookEventNotFound) {

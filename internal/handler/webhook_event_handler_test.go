@@ -16,7 +16,7 @@ func TestWebhookEventHandlerCreate(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	webhookEventRepository := repository.NewMemoryWebhookEventRepository()
-	webhookEventService := service.NewWebhookEventService(webhookEventRepository)
+	webhookEventService := service.NewWebhookEventService(webhookEventRepository, nil)
 	webhookEventHandler := NewWebhookEventHandler(webhookEventService)
 
 	router := gin.New()
@@ -42,7 +42,7 @@ func TestWebhookEventHandlerFindByID(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	webhookEventRepository := repository.NewMemoryWebhookEventRepository()
-	webhookEventService := service.NewWebhookEventService(webhookEventRepository)
+	webhookEventService := service.NewWebhookEventService(webhookEventRepository, nil)
 	webhookEventHandler := NewWebhookEventHandler(webhookEventService)
 
 	createdEvent, err := webhookEventService.Create(t.Context(), service.CreateWebhookEventInput{
@@ -76,7 +76,7 @@ func TestWebhookEventHandlerFindByIDReturnsNotFound(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	webhookEventRepository := repository.NewMemoryWebhookEventRepository()
-	webhookEventService := service.NewWebhookEventService(webhookEventRepository)
+	webhookEventService := service.NewWebhookEventService(webhookEventRepository, nil)
 	webhookEventHandler := NewWebhookEventHandler(webhookEventService)
 
 	router := gin.New()
@@ -96,7 +96,7 @@ func TestWebhookEventHandlerCreateRejectsInvalidJSON(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	webhookEventRepository := repository.NewMemoryWebhookEventRepository()
-	webhookEventService := service.NewWebhookEventService(webhookEventRepository)
+	webhookEventService := service.NewWebhookEventService(webhookEventRepository, nil)
 	webhookEventHandler := NewWebhookEventHandler(webhookEventService)
 
 	router := gin.New()
